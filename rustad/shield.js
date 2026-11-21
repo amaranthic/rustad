@@ -1,6 +1,6 @@
 // ==============================================================================
 // RUSTAD PAGE SHIELD (shield.js)
-// Zero-latency injection of pure Rust-compiled cosmetic stylesheet
+// 100% Generic, site-agnostic cosmetic CSS injector
 // ==============================================================================
 
 (function () {
