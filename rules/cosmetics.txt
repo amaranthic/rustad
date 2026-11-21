@@ -1,8 +1,8 @@
 ! ==============================================================================
 ! RUSTAD COSMETIC LIST (rules/cosmetics.txt)
-! Global hides (##), domain-specific hides, and cosmetic exceptions (#@#)
+! Clean, collision-free cosmetic ad element hiding
 ! ==============================================================================
-! Global cosmetic hiding rules & container collapse
+! Global cosmetic hiding rules (exact classes & IDs only, no dangerous substrings)
 ##.ad-banner
 ##.ad-container
 ##.ad-wrapper
@@ -25,14 +25,6 @@
 ##[id^="google_ads_iframe"]
 ##[id^="google_ads_div_"]
 ##[id^="aswift_"]
-##[id*="ad-slot"]
-##[id*="ad-unit"]
-##[id*="ad-container"]
-##[class*="ad-slot"]
-##[class*="ad-unit"]
-##[class*="ad-wrapper"]
-##[class*="ad-container"]
-##[class*="ad-placeholder"]
 ##[data-ad-slot]
 ##[data-ad-unit]
 ##[data-adunit]
@@ -52,19 +44,13 @@
 ##div[class*="taboola"]
 ##div[class*="outbrain"]
 
-! --- YouTube-Specific Cosmetic Rules (Player, Overlays, Feed, Shorts) ---
+! --- YouTube-Specific Cosmetic Rules ---
+! (DO NOT hide .ytp-ad-module or .video-ads - that hides the Skip Ad button!)
 youtube.com###masthead-ad
 youtube.com###player-ads
-youtube.com##.video-ads
-youtube.com##.ytp-ad-module
 youtube.com##.ytp-ad-overlay-container
-youtube.com##.ytp-ad-player-overlay
 youtube.com##.ytp-ad-image-overlay
 youtube.com##.ytp-ad-text-overlay
-youtube.com##.ytp-ad-progress
-youtube.com##.ytp-ad-progress-list
-youtube.com##.ytp-ad-preview-container
-youtube.com##.ytp-ad-message-container
 youtube.com##.badge-style-type-ad
 youtube.com##ytd-ad-slot-renderer
 youtube.com##ytd-in-feed-ad-layout-renderer
