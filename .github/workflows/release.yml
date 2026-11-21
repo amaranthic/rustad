@@ -137,11 +137,13 @@ jobs:
             High-performance, zero-dependency browser-agnostic ad blocking engine.
 
             #### Release Assets:
-            - **`${{ env.ASSET_CRX }}`**: Chrome / Chromium / Brave / Edge packaged extension.
-            - **`${{ env.ASSET_ZIP }}`**: Load-unpacked ZIP package for standard Chrome Developer Mode.
+            - **`${{ env.ASSET_ZIP }}`**: **Recommended for Google Chrome** (Load unpacked).
+            - **`${{ env.ASSET_CRX }}`**: Direct drag-and-drop package for Brave / Edge / Chromium.
 
-            #### Installation Guide:
-            * **Standard Google Chrome**: Download the **`.zip`** file, extract it, navigate to `chrome://extensions`, enable **Developer mode** (top-right), and click **Load unpacked**. *(Note: Google Chrome blocks off-store `.crx` files with `CRX_REQUIRED_PROOF_MISSING` unless loaded unpacked or installed via Web Store).*
+            > **Note**: The `.crx` file is intended for browsers that do not enforce the Chrome Web Store signature requirement, such as Brave, un-googled Chromium, or enterprise-managed browsers. Official Google Chrome blocks off-store `.crx` drag-and-drop installations with `CRX_REQUIRED_PROOF_MISSING`. For Google Chrome, use the `.zip` archive via **Load unpacked**.
+
+            #### 💡 Installation Guide:
+            * **Standard Google Chrome**: Download the **`.zip`** file, extract it, navigate to `chrome://extensions`, enable **Developer mode** (top-right), and click **Load unpacked**.
             * **Brave / Edge / Chromium**: Download the **`.crx`** file, navigate to `chrome://extensions`, and drag & drop the `.crx` file into the page.
           files: |
             ${{ env.ASSET_ZIP }}
