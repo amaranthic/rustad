@@ -1,6 +1,6 @@
 // ==============================================================================
 // RUSTAD PAGE SHIELD (shield.js)
-// 100% Generic, site-agnostic cosmetic CSS injector
+// 100% Generic, site-agnostic cosmetic CSS injector + badge reporter
 // ==============================================================================
 
 (function () {

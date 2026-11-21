@@ -1,10 +1,51 @@
 // ==============================================================================
 // RUSTAD WORKER (worker.js)
-// Service worker managing declarative network rules and WASM cosmetics engine
+// Service worker managing declarative network rules, WASM cosmetics, and in-memory badge
 // ==============================================================================
 
 let wasmInstance = null;
 let memoryBuffer = null;
+
+// In-memory badge counts per tab (strictly RAM only, resets on navigation)
+const tabCounts = new Map();
+
+function setBadge(tabId, count) {
+  if (tabId < 0) return;
+  const text = count > 0 ? String(count) : "";
+  chrome.action.setBadgeText({ tabId, text });
+  chrome.action.setBadgeBackgroundColor({ tabId, color: "#e05666" });
+  if (chrome.action.setBadgeTextColor) {
+    chrome.action.setBadgeTextColor({ tabId, color: "#ffffff" });
+  }
+}
+
+function incrementBadge(tabId, amount = 1) {
+  if (tabId < 0) return;
+  const current = (tabCounts.get(tabId) || 0) + amount;
+  tabCounts.set(tabId, current);
+  setBadge(tabId, current);
+}
+
+// Reset badge on tab navigation or removal
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status === "loading") {
+    tabCounts.delete(tabId);
+    setBadge(tabId, 0);
+  }
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  tabCounts.delete(tabId);
+});
+
+// Track network ad blocks in real time
+if (chrome.declarativeNetRequest.onRuleMatchedDebug) {
+  chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((info) => {
+    if (info && info.request && typeof info.request.tabId === "number") {
+      incrementBadge(info.request.tabId, 1);
+    }
+  });
+}
 
 async function loadWasm() {
   if (wasmInstance) return wasmInstance;
@@ -40,7 +81,6 @@ async function getCosmeticCss(url) {
   const writtenLen = instance.exports.rustad_get_cosmetics(len);
   if (writtenLen === 0) return "";
 
-  // Refresh buffer in case of memory growth
   memoryBuffer = instance.exports.memory.buffer;
   const outputView = new Uint8Array(memoryBuffer, outputPtr, writtenLen);
   const decoder = new TextDecoder();
@@ -63,6 +103,8 @@ async function setRulesetEnabled(enabled) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || !message.action) return false;
 
+  const tabId = sender && sender.tab ? sender.tab.id : -1;
+
   if (message.action === "getCosmetics") {
     chrome.storage.local.get({ enabled: true }, async (data) => {
       if (!data.enabled) {
@@ -75,8 +117,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keep message channel open for async response
   }
 
+  if (message.action === "reportCosmetics") {
+    if (tabId >= 0 && message.count > 0) {
+      incrementBadge(tabId, message.count);
+    }
+    return false;
+  }
+
   if (message.action === "toggle") {
     setRulesetEnabled(message.enabled);
+
+    if (!message.enabled) {
+      // Clear all badges when protection is toggled OFF
+      tabCounts.clear();
+      chrome.tabs.query({}, (tabs) => {
+        for (const tab of tabs) {
+          if (tab.id) setBadge(tab.id, 0);
+        }
+      });
+    }
 
     // Notify all open tabs to update cosmetic styles
     chrome.tabs.query({}, (tabs) => {
