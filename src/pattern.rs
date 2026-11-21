@@ -66,25 +66,51 @@ pub fn matches_pattern(url: &str, pattern: &str) -> bool {
 
     // 1. Domain anchor (||)
     if let Some(rest) = pat_trimmed.strip_prefix("||") {
+        let (end_anchored, rest_no_end) = if let Some(stripped) = rest.strip_suffix('|') {
+            (true, stripped)
+        } else {
+            (false, rest)
+        };
+
+        // Prepare pattern slice: if not end-anchored and doesn't end with '*', allow trailing chars
+        let rest_bytes = rest_no_end.as_bytes();
+        let mut p_buf = [0u8; 512];
+        let p_match: &[u8] = if !end_anchored && !rest_no_end.ends_with('*') {
+            if rest_bytes.len() < p_buf.len() {
+                p_buf[..rest_bytes.len()].copy_from_slice(rest_bytes);
+                p_buf[rest_bytes.len()] = b'*';
+                &p_buf[..=rest_bytes.len()]
+            } else {
+                rest_bytes
+            }
+        } else {
+            rest_bytes
+        };
+
         let start = if let Some(pos) = url.find("://") {
             pos + 3
         } else {
             0
         };
 
-        let mut current_offset = start;
+        // Strip userinfo from domain search start if present
+        let auth_end = url[start..].find(['/', '?', '#']).unwrap_or(url.len() - start);
+        let host_start = if let Some(at_pos) = url[start..start + auth_end].find('@') {
+            start + at_pos + 1
+        } else {
+            start
+        };
+
+        let mut current_offset = host_start;
         while current_offset < url_bytes.len() {
-            if glob_match(&url_bytes[current_offset..], rest.as_bytes()) {
+            if glob_match(&url_bytes[current_offset..], p_match) {
                 return true;
             }
-            if let Some(next_dot) = url[current_offset..].find('.') {
-                let abs_dot = current_offset + next_dot + 1;
-                if let Some(slash_pos) = url[current_offset..].find('/') {
-                    if next_dot > slash_pos {
-                        break;
-                    }
-                }
-                current_offset = abs_dot;
+
+            // Subdomain walking: never cross into path, query, or fragment
+            let authority_remaining = url[current_offset..].find(['/', '?', '#']).unwrap_or(url.len() - current_offset);
+            if let Some(next_dot) = url[current_offset..current_offset + authority_remaining].find('.') {
+                current_offset += next_dot + 1;
             } else {
                 break;
             }
@@ -183,6 +209,10 @@ mod tests {
     fn test_matches_pattern_anchors() {
         assert!(matches_pattern("https://example.com/ads/banner.js", "/ads/"));
         assert!(matches_pattern("https://sub.example.com/tracking/123", "||example.com/tracking/*"));
+        assert!(matches_pattern("https://example.com/ads/banner.js", "||example.com/ads^"));
+        assert!(matches_pattern("https://example.com/ads", "||example.com/ads^"));
+        assert!(matches_pattern("https://example.com?query=1.2.3", "||example.com^"));
+        assert!(matches_pattern("https://user:pass@sub.example.com/ads/1", "||example.com/ads^"));
         assert!(matches_pattern("https://tracker.com/pixel.gif", "|https://tracker.com*"));
     }
 }

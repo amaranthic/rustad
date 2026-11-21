@@ -22,11 +22,15 @@ pub fn ascii_lowercase_cmp(a: &str, b: &str) -> core::cmp::Ordering {
 
 /// Extracts the hostname component from a URL without heap allocation.
 ///
+/// Correctly handles userinfo (`user:pass@`), ports, and IPv6 literals.
+///
 /// # Examples
 ///
 /// ```
 /// use rustad::domain::extract_host;
 /// assert_eq!(extract_host("https://sub.example.com/path"), "sub.example.com");
+/// assert_eq!(extract_host("https://alice:secret@example.com:8080/"), "example.com");
+/// assert_eq!(extract_host("http://[::1]:8080/"), "[::1]");
 /// ```
 pub fn extract_host(url: &str) -> &str {
     let mut s = url.trim();
@@ -40,17 +44,19 @@ pub fn extract_host(url: &str) -> &str {
     let host_end = s.find(['/', '?', '#']).unwrap_or(s.len());
     s = &s[..host_end];
 
-    // Strip port if present
-    if let Some(colon_pos) = s.rfind(':') {
-        // Ensure it's not an IPv6 address literal
-        if !s.ends_with(']') {
-            s = &s[..colon_pos];
-        }
-    }
-
-    // Strip userinfo if present (user:pass@host)
+    // Strip userinfo FIRST if present (e.g. user:pass@host)
     if let Some(at_pos) = s.find('@') {
         s = &s[at_pos + 1..];
+    }
+
+    // Handle port and IPv6 brackets
+    if s.starts_with('[') {
+        // IPv6 literal: find closing ']'
+        if let Some(closing) = s.find(']') {
+            s = &s[..=closing];
+        }
+    } else if let Some(colon_pos) = s.rfind(':') {
+        s = &s[..colon_pos];
     }
 
     s.trim_matches('.')
@@ -113,6 +119,9 @@ mod tests {
         assert_eq!(extract_host("http://sub.domain.org:8080/a?b=c"), "sub.domain.org");
         assert_eq!(extract_host("doubleclick.net/ads.js"), "doubleclick.net");
         assert_eq!(extract_host("https://user:pass@secret.com:443/"), "secret.com");
+        assert_eq!(extract_host("https://alice:secret123@example.com/"), "example.com");
+        assert_eq!(extract_host("http://[::1]:8080/path"), "[::1]");
+        assert_eq!(extract_host("http://[2001:db8::1]/path"), "[2001:db8::1]");
     }
 
     #[test]

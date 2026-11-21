@@ -6,14 +6,12 @@ pub mod cosmetic;
 pub mod domain;
 pub mod engine;
 pub mod pattern;
-pub mod types;
 
 #[path = "generated/rules.rs"]
 pub mod rules;
 
 // Re-export primary engine functions for idiomatic Rust callers
-pub use engine::{check_url, get_cosmetic_css, write_cosmetic_css};
-pub use types::Verdict;
+pub use engine::{check_url, get_cosmetic_css, write_cosmetic_css, Verdict};
 
 // ==============================================================================
 // C-ABI / WebAssembly Exports
