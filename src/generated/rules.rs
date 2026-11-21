@@ -3,6 +3,9 @@
 // Pre-sorted, deduplicated static slices for zero-runtime parsing
 // ==============================================================================
 
+//! Auto-generated static filter rule definitions.
+
+/// Lexicographically sorted slice of blocked domain names.
 pub static BLOCKED_DOMAINS: &[&str] = &[
     "adnxs.com",
     "adroll.com",
@@ -19,6 +22,7 @@ pub static BLOCKED_DOMAINS: &[&str] = &[
     "taboola.com",
 ];
 
+/// Slice of blocked path, wildcard, and separator patterns.
 pub static BLOCKED_PATTERNS: &[&str] = &[
     "*advertising*",
     "/ad-banner-*.png",
@@ -29,16 +33,19 @@ pub static BLOCKED_PATTERNS: &[&str] = &[
     "||example.com/tracking/*",
 ];
 
+/// Lexicographically sorted slice of whitelisted/allowed domain names.
 pub static ALLOWED_DOMAINS: &[&str] = &[
     "cdn.allowed-domain.org",
 ];
 
+/// Slice of whitelisted/allowed URL patterns.
 pub static ALLOWED_PATTERNS: &[&str] = &[
     "||adservice.google.com/essential.js",
     "||example.com/safe-analytics.js",
     "||googleadservices.com/pagead/aclk?*",
 ];
 
+/// Global CSS element-hiding selectors applied across all domains.
 pub static GLOBAL_COSMETIC: &[&str] = &[
     ".ad-banner",
     ".ad-container",
@@ -48,6 +55,7 @@ pub static GLOBAL_COSMETIC: &[&str] = &[
     "div[class*=\"sponsored-post\"]",
 ];
 
+/// Domain-specific CSS element-hiding selectors sorted by domain.
 pub static DOMAIN_COSMETIC: &[(&str, &str)] = &[
     ("news.ycombinator.com", ".sponsor-banner"),
     ("reddit.com", "div.promotedlink"),
@@ -58,6 +66,7 @@ pub static DOMAIN_COSMETIC: &[(&str, &str)] = &[
     ("youtube.com", "ytd-ad-slot-renderer"),
 ];
 
+/// Domain-specific cosmetic exceptions (#@#) sorted by domain.
 pub static COSMETIC_EXCEPTIONS: &[(&str, &str)] = &[
     ("github.com", ".ad-banner"),
     ("news.ycombinator.com", ".sponsor-banner"),

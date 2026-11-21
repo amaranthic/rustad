@@ -2,9 +2,13 @@
 name = "rustad"
 version = "0.1.0"
 edition = "2021"
-authors = ["Rustad Team"]
+authors = ["amaranthic"]
 description = "High-performance, zero-dependency browser-agnostic adblocking engine in Rust and WebAssembly"
 license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/amaranthic/rustad"
+keywords = ["adblock", "wasm", "adblocker", "network", "filter"]
+categories = ["web-programming", "wasm", "network-programming"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -19,3 +23,15 @@ strip = true
 [profile.dev]
 opt-level = 0
 debug = true
+
+[lints.rust]
+missing_docs = "warn"
+unused_must_use = "deny"
+unreachable_pub = "warn"
+unsafe_op_in_unsafe_fn = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[lints.clippy]
+all = "warn"
+missing_safety_doc = "warn"
+manual_strip = "warn"

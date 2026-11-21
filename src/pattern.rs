@@ -1,19 +1,18 @@
-// ==============================================================================
-// RUSTAD PATTERN MATCHER (src/pattern.rs)
-// Iterative, zero-recursion, zero-allocation glob (*) & separator (^) matcher
-// ==============================================================================
+//! Iterative wildcard (*) and separator (^) pattern matcher.
 
 use crate::rules;
 
-/// Separator character per Adblock Plus specification:
-/// Any ASCII byte that is NOT alphanumeric and NOT '_', '-', '.', '%'
+/// Returns `true` if the ASCII byte is a separator per the Adblock Plus specification.
+///
+/// A separator is any ASCII character that is not alphanumeric and not `_`, `-`, `.`, `%`.
 #[inline]
 pub fn is_separator(b: u8) -> bool {
     !b.is_ascii_alphanumeric() && b != b'_' && b != b'-' && b != b'.' && b != b'%'
 }
 
-/// Matches `text` against a pattern containing `*` wildcards and `^` separators.
-/// Pure iterative matcher: O(N) time, zero recursion, zero heap allocations.
+/// Evaluates whether `text` matches `pat` using wildcards `*` and separators `^`.
+///
+/// Runs iteratively with $O(N)$ time complexity and zero heap allocations.
 pub fn glob_match(text: &[u8], pat: &[u8]) -> bool {
     let mut t_idx = 0;
     let mut p_idx = 0;
@@ -36,9 +35,7 @@ pub fn glob_match(text: &[u8], pat: &[u8]) -> bool {
             } else {
                 return false;
             }
-        } else if p_idx < pat.len()
-            && pat[p_idx].to_ascii_lowercase() == text[t_idx].to_ascii_lowercase()
-        {
+        } else if p_idx < pat.len() && pat[p_idx].eq_ignore_ascii_case(&text[t_idx]) {
             p_idx += 1;
             t_idx += 1;
         } else if star_p_idx != usize::MAX {
@@ -58,18 +55,17 @@ pub fn glob_match(text: &[u8], pat: &[u8]) -> bool {
     p_idx == pat.len()
 }
 
-/// Checks if a URL matches a rule pattern with ABP semantics:
-/// - "||pattern": domain anchor (matches at domain boundary or any subdomain)
-/// - "|pattern": matches beginning of URL
-/// - "pattern|": matches end of URL
-/// - "pattern": matches anywhere in URL
+/// Checks if a URL matches a pattern rule with standard ABP anchors:
+/// - `||pattern`: domain anchor (matches domain boundary or subdomains)
+/// - `|pattern`: matches start of URL
+/// - `pattern|`: matches end of URL
+/// - `pattern`: matches anywhere in URL
 pub fn matches_pattern(url: &str, pattern: &str) -> bool {
     let url_bytes = url.as_bytes();
     let pat_trimmed = pattern.trim();
 
     // 1. Domain anchor (||)
     if let Some(rest) = pat_trimmed.strip_prefix("||") {
-        // Find where host starts in url
         let start = if let Some(pos) = url.find("://") {
             pos + 3
         } else {
@@ -81,10 +77,8 @@ pub fn matches_pattern(url: &str, pattern: &str) -> bool {
             if glob_match(&url_bytes[current_offset..], rest.as_bytes()) {
                 return true;
             }
-            // Move to next subdomain dot until path start
             if let Some(next_dot) = url[current_offset..].find('.') {
                 let abs_dot = current_offset + next_dot + 1;
-                // Don't cross into the path
                 if let Some(slash_pos) = url[current_offset..].find('/') {
                     if next_dot > slash_pos {
                         break;
@@ -117,31 +111,28 @@ pub fn matches_pattern(url: &str, pattern: &str) -> bool {
     if match_start_only && match_end_only {
         glob_match(url_bytes, p_bytes)
     } else if match_start_only {
-        // Match from start of URL, allow trailing characters
         let mut p_with_star = [0u8; 512];
-        if p_bytes.len() + 1 <= p_with_star.len() {
+        if p_bytes.len() < p_with_star.len() {
             p_with_star[..p_bytes.len()].copy_from_slice(p_bytes);
             p_with_star[p_bytes.len()] = b'*';
-            glob_match(url_bytes, &p_with_star[..p_bytes.len() + 1])
+            glob_match(url_bytes, &p_with_star[..=p_bytes.len()])
         } else {
             glob_match(url_bytes, p_bytes)
         }
     } else if match_end_only {
-        // Match at end of URL
         let mut p_with_star = [0u8; 512];
-        if p_bytes.len() + 1 <= p_with_star.len() {
+        if p_bytes.len() < p_with_star.len() {
             p_with_star[0] = b'*';
-            p_with_star[1..p_bytes.len() + 1].copy_from_slice(p_bytes);
-            glob_match(url_bytes, &p_with_star[..p_bytes.len() + 1])
+            p_with_star[1..=p_bytes.len()].copy_from_slice(p_bytes);
+            glob_match(url_bytes, &p_with_star[..=p_bytes.len()])
         } else {
             glob_match(url_bytes, p_bytes)
         }
     } else {
-        // Default: matches anywhere in URL
         let mut p_with_stars = [0u8; 514];
-        if p_bytes.len() + 2 <= p_with_stars.len() {
+        if p_bytes.len() + 1 < p_with_stars.len() {
             p_with_stars[0] = b'*';
-            p_with_stars[1..p_bytes.len() + 1].copy_from_slice(p_bytes);
+            p_with_stars[1..=p_bytes.len()].copy_from_slice(p_bytes);
             p_with_stars[p_bytes.len() + 1] = b'*';
             glob_match(url_bytes, &p_with_stars[..p_bytes.len() + 2])
         } else {
@@ -150,6 +141,7 @@ pub fn matches_pattern(url: &str, pattern: &str) -> bool {
     }
 }
 
+/// Checks if `url` matches any pattern in `BLOCKED_PATTERNS`.
 pub fn url_matches_blocked_pattern(url: &str) -> bool {
     for pat in rules::BLOCKED_PATTERNS {
         if matches_pattern(url, pat) {
@@ -159,6 +151,7 @@ pub fn url_matches_blocked_pattern(url: &str) -> bool {
     false
 }
 
+/// Checks if `url` matches any pattern in `ALLOWED_PATTERNS`.
 pub fn url_matches_allowed_pattern(url: &str) -> bool {
     for pat in rules::ALLOWED_PATTERNS {
         if matches_pattern(url, pat) {

@@ -1,10 +1,8 @@
-// ==============================================================================
-// RUSTAD DOMAIN MATCHER (src/domain.rs)
-// Ultra-fast, zero-allocation hostname extraction & binary search lookup
-// ==============================================================================
+//! Domain matching, hostname extraction, and binary search lookups.
 
 use crate::rules;
 
+/// Compares two strings case-insensitively byte-by-byte without heap allocations.
 #[inline]
 pub fn ascii_lowercase_cmp(a: &str, b: &str) -> core::cmp::Ordering {
     let mut a_bytes = a.bytes().map(|c| c.to_ascii_lowercase());
@@ -22,8 +20,14 @@ pub fn ascii_lowercase_cmp(a: &str, b: &str) -> core::cmp::Ordering {
     }
 }
 
-/// Extracts hostname from a full or partial URL without heap allocation.
-/// "https://sub.example.com:8080/path?q=1" -> "sub.example.com"
+/// Extracts the hostname component from a URL without heap allocation.
+///
+/// # Examples
+///
+/// ```
+/// use rustad::domain::extract_host;
+/// assert_eq!(extract_host("https://sub.example.com/path"), "sub.example.com");
+/// ```
 pub fn extract_host(url: &str) -> &str {
     let mut s = url.trim();
 
@@ -33,9 +37,7 @@ pub fn extract_host(url: &str) -> &str {
     }
 
     // Cut off path, query, fragment
-    let host_end = s
-        .find(|c| c == '/' || c == '?' || c == '#')
-        .unwrap_or(s.len());
+    let host_end = s.find(['/', '?', '#']).unwrap_or(s.len());
     s = &s[..host_end];
 
     // Strip port if present
@@ -55,8 +57,11 @@ pub fn extract_host(url: &str) -> &str {
 }
 
 /// Checks if `host` or any of its parent domains exist in `list` using binary search.
-/// For example, for "tracker.sub.doubleclick.net":
-/// Checks "tracker.sub.doubleclick.net", then "sub.doubleclick.net", then "doubleclick.net".
+///
+/// For example, checking `"tracker.sub.doubleclick.net"` checks:
+/// 1. `"tracker.sub.doubleclick.net"`
+/// 2. `"sub.doubleclick.net"`
+/// 3. `"doubleclick.net"`
 pub fn is_domain_in_list(list: &[&str], host: &str) -> bool {
     if host.is_empty() || list.is_empty() {
         return false;
@@ -86,11 +91,13 @@ pub fn is_domain_in_list(list: &[&str], host: &str) -> bool {
     false
 }
 
+/// Checks if `host` or any parent domain matches a blocked domain.
 #[inline]
 pub fn domain_is_blocked(host: &str) -> bool {
     is_domain_in_list(rules::BLOCKED_DOMAINS, host)
 }
 
+/// Checks if `host` or any parent domain matches an allowed/whitelisted domain.
 #[inline]
 pub fn domain_is_allowed(host: &str) -> bool {
     is_domain_in_list(rules::ALLOWED_DOMAINS, host)

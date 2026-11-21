@@ -1,12 +1,9 @@
-// ==============================================================================
-// RUSTAD COSMETIC ENGINE (src/cosmetic.rs)
-// Fast CSS element hiding selector resolution & exception (#@#) handling
-// ==============================================================================
+//! Cosmetic element-hiding selector lookup and `#@#` exception resolution.
 
 use crate::domain::ascii_lowercase_cmp;
 use crate::rules;
 
-/// Checks if selector is excepted for the given host in COSMETIC_EXCEPTIONS.
+/// Checks if `selector` is explicitly excepted for `host` or its parent domains in `COSMETIC_EXCEPTIONS`.
 pub fn is_excepted(host: &str, selector: &str) -> bool {
     if host.is_empty() || rules::COSMETIC_EXCEPTIONS.is_empty() {
         return false;
@@ -14,7 +11,6 @@ pub fn is_excepted(host: &str, selector: &str) -> bool {
 
     let mut current = host;
     loop {
-        // Binary search for any exception matching current domain
         let start = rules::COSMETIC_EXCEPTIONS
             .partition_point(|&(d, _)| ascii_lowercase_cmp(d, current).is_lt());
 
@@ -40,7 +36,7 @@ pub fn is_excepted(host: &str, selector: &str) -> bool {
     false
 }
 
-/// Iterates all matching domain-specific selectors for `host` (and parent domains).
+/// Invokes `callback` for every domain-specific selector matching `host` and its parent domains.
 pub fn for_each_domain_selector<F>(host: &str, mut callback: F)
 where
     F: FnMut(&'static str),
@@ -72,7 +68,7 @@ where
     }
 }
 
-/// Returns global cosmetic selectors.
+/// Returns the static slice of global CSS selectors.
 #[inline]
 pub fn global_selectors() -> &'static [&'static str] {
     rules::GLOBAL_COSMETIC

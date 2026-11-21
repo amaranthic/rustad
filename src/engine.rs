@@ -1,18 +1,18 @@
-// ==============================================================================
-// RUSTAD COORDINATOR ENGINE (src/engine.rs)
-// Browser-agnostic engine coordinating matching and cosmetic generation
-// ==============================================================================
+//! High-level coordinator evaluating network requests and building cosmetic CSS rules.
 
 use crate::cosmetic::{for_each_domain_selector, global_selectors, is_excepted};
 use crate::domain::{domain_is_allowed, domain_is_blocked, extract_host};
 use crate::pattern::{url_matches_allowed_pattern, url_matches_blocked_pattern};
 use crate::types::Verdict;
 
-/// Evaluates a URL against all rules according to ABP priority:
-/// 1. Whitelist / Allow rules (exceptions win unconditionally)
-/// 2. Domain block rules
-/// 3. Path / pattern block rules
+/// Evaluates `url` against filter rules and returns a `Verdict`.
+///
+/// Priority order follows standard ad-blocking rules:
+/// 1. Whitelist / Allow rules (`@@`)
+/// 2. Blocked domain rules (`||domain^`)
+/// 3. Blocked pattern rules (`/ads/`, `*wildcard*`)
 /// 4. Pass (no rules matched)
+#[must_use]
 pub fn check_url(url: &str) -> Verdict {
     let host = extract_host(url);
 
@@ -34,16 +34,14 @@ pub fn check_url(url: &str) -> Verdict {
     Verdict::Pass
 }
 
-/// Generates a combined CSS string for a given URL/hostname into a pre-allocated byte slice.
-/// Returns number of bytes written. Format:
-/// "selector1, selector2 { display: none !important; }"
-/// Zero heap allocations in hot path.
+/// Generates cosmetic CSS hiding rules for `url` directly into `out`.
+///
+/// Returns the number of bytes written.
 pub fn write_cosmetic_css(url: &str, out: &mut [u8]) -> usize {
     let host = extract_host(url);
     let mut written = 0;
     let mut count = 0;
 
-    // Helper closure to append a string slice
     let append = |s: &str, out: &mut [u8], written: &mut usize| -> bool {
         let bytes = s.as_bytes();
         if *written + bytes.len() <= out.len() {
@@ -89,7 +87,8 @@ pub fn write_cosmetic_css(url: &str, out: &mut [u8]) -> usize {
     written
 }
 
-/// Native convenience helper returning a String (useful for native CLI/tests)
+/// Generates cosmetic CSS as a `String` (useful for native applications and tests).
+#[must_use]
 pub fn get_cosmetic_css(url: &str) -> String {
     let mut buffer = [0u8; 8192];
     let len = write_cosmetic_css(url, &mut buffer);
@@ -102,7 +101,6 @@ mod tests {
 
     #[test]
     fn test_check_url_verdicts() {
-        // Blocked domain
         assert_eq!(
             check_url("https://adservice.google.com/ad.js"),
             Verdict::Block
@@ -111,20 +109,14 @@ mod tests {
             check_url("https://sub.doubleclick.net/pagead/id"),
             Verdict::Block
         );
-
-        // Allowed exception overrides domain
         assert_eq!(
             check_url("https://adservice.google.com/essential.js"),
             Verdict::Allow
         );
-
-        // Blocked pattern
         assert_eq!(
             check_url("https://somesite.com/banner-ad.js"),
             Verdict::Block
         );
-
-        // Neutral / pass
         assert_eq!(
             check_url("https://wikipedia.org/wiki/Rust"),
             Verdict::Pass
