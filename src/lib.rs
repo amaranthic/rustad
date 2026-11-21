@@ -18,32 +18,57 @@ pub use engine::{check_url, get_cosmetic_css, write_cosmetic_css, Verdict};
 // Zero-allocation memory protocol for JS / WebAssembly runtimes
 // ==============================================================================
 
-/// Static 16KB scratch buffer for passing strings between JS and WASM.
-static mut SCRATCH: [u8; 16384] = [0u8; 16384];
+/// Static 2KB input buffer for receiving URLs from host runtimes.
+static mut INPUT: [u8; 2048] = [0u8; 2048];
 
-/// Returns a pointer to the static scratch buffer for foreign function callers.
+/// Static 16KB output buffer for writing cosmetic CSS to host runtimes.
+static mut OUTPUT: [u8; 16384] = [0u8; 16384];
+
+/// Returns a pointer to the input buffer.
 ///
 /// # Safety
 ///
-/// The caller must ensure single-threaded execution when accessing the returned memory buffer.
+/// The caller must ensure single-threaded execution when writing to this buffer.
 #[no_mangle]
 #[must_use]
-pub unsafe extern "C" fn rustad_scratch_ptr() -> *mut u8 {
-    core::ptr::addr_of_mut!(SCRATCH).cast::<u8>()
+pub unsafe extern "C" fn rustad_input_ptr() -> *mut u8 {
+    core::ptr::addr_of_mut!(INPUT).cast::<u8>()
 }
 
-/// Returns the byte capacity of the static scratch buffer.
+/// Returns the byte capacity of the input buffer.
 ///
 /// # Safety
 ///
-/// This function is safe to call from any context.
+/// Safe to call from any context.
 #[no_mangle]
 #[must_use]
-pub unsafe extern "C" fn rustad_scratch_len() -> usize {
+pub unsafe extern "C" fn rustad_input_len() -> usize {
+    2048
+}
+
+/// Returns a pointer to the output buffer.
+///
+/// # Safety
+///
+/// The caller must ensure single-threaded execution when reading from this buffer.
+#[no_mangle]
+#[must_use]
+pub unsafe extern "C" fn rustad_output_ptr() -> *mut u8 {
+    core::ptr::addr_of_mut!(OUTPUT).cast::<u8>()
+}
+
+/// Returns the byte capacity of the output buffer.
+///
+/// # Safety
+///
+/// Safe to call from any context.
+#[no_mangle]
+#[must_use]
+pub unsafe extern "C" fn rustad_output_len() -> usize {
     16384
 }
 
-/// Evaluates a URL provided via raw pointer and length.
+/// Evaluates the URL written in the input buffer.
 ///
 /// Returns:
 /// - `0`: `Verdict::Pass`
@@ -52,14 +77,17 @@ pub unsafe extern "C" fn rustad_scratch_len() -> usize {
 ///
 /// # Safety
 ///
-/// The caller must ensure `url_ptr` points to at least `url_len` readable UTF-8 bytes.
+/// The caller must ensure `url_len` bytes in the input buffer are valid UTF-8.
 #[no_mangle]
-pub unsafe extern "C" fn rustad_check_url(url_ptr: *const u8, url_len: usize) -> u32 {
-    if url_ptr.is_null() || url_len == 0 {
+pub unsafe extern "C" fn rustad_check_url(url_len: usize) -> u32 {
+    let len = url_len.min(2048);
+    if len == 0 {
         return Verdict::Pass as u32;
     }
 
-    let slice = unsafe { core::slice::from_raw_parts(url_ptr, url_len) };
+    let slice = unsafe {
+        core::slice::from_raw_parts(core::ptr::addr_of!(INPUT).cast::<u8>(), len)
+    };
     if let Ok(url_str) = core::str::from_utf8(slice) {
         check_url(url_str) as u32
     } else {
@@ -67,25 +95,28 @@ pub unsafe extern "C" fn rustad_check_url(url_ptr: *const u8, url_len: usize) ->
     }
 }
 
-/// Writes cosmetic CSS for the given URL into the static scratch buffer.
+/// Writes cosmetic CSS for the URL in the input buffer into the output buffer.
 ///
 /// Returns the number of bytes written.
 ///
 /// # Safety
 ///
-/// The caller must ensure `url_ptr` points to at least `url_len` readable UTF-8 bytes.
+/// The caller must ensure `url_len` bytes in the input buffer are valid UTF-8.
 #[no_mangle]
-pub unsafe extern "C" fn rustad_get_cosmetics(url_ptr: *const u8, url_len: usize) -> usize {
-    if url_ptr.is_null() || url_len == 0 {
+pub unsafe extern "C" fn rustad_get_cosmetics(url_len: usize) -> usize {
+    let len = url_len.min(2048);
+    if len == 0 {
         return 0;
     }
 
-    let slice = unsafe { core::slice::from_raw_parts(url_ptr, url_len) };
+    let slice = unsafe {
+        core::slice::from_raw_parts(core::ptr::addr_of!(INPUT).cast::<u8>(), len)
+    };
     if let Ok(url_str) = core::str::from_utf8(slice) {
-        let scratch_slice = unsafe {
-            core::slice::from_raw_parts_mut(core::ptr::addr_of_mut!(SCRATCH).cast::<u8>(), 16384)
+        let out_slice = unsafe {
+            core::slice::from_raw_parts_mut(core::ptr::addr_of_mut!(OUTPUT).cast::<u8>(), 16384)
         };
-        write_cosmetic_css(url_str, scratch_slice)
+        write_cosmetic_css(url_str, out_slice)
     } else {
         0
     }

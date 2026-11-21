@@ -1,2 +1,5 @@
 /target
 conversation.txt
+*.jpg
+*.jpeg
+*:Zone.Identifier
