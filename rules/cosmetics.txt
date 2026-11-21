@@ -1,82 +1,256 @@
 ! ==============================================================================
-! RUSTAD COSMETIC LIST (rules/cosmetics.txt)
-! Clean, collision-free cosmetic ad element hiding
+! RUSTAD EXTREME COSMETIC SELECTORS (rules/cosmetics.txt)
+! Collapses visual ad containers, sidebars, sponsored feeds, and layouts.
+! Total visibility, opacity, and margin elimination.
 ! ==============================================================================
-! Global cosmetic hiding rules (exact classes & IDs only, no dangerous substrings)
+
+! --- Universal Web Ad Containers & Components ---
 ##.ad-banner
-##.ad-container
-##.ad-wrapper
-##.ad-slot
-##.ad-placeholder
-##.ad-placement
 ##.ad-box
-##.ad-unit
+##.ad-card
+##.ad-container
+##.ad-frame
+##.ad-holder
+##.ad-leaderboard
+##.ad-module
+##.ad-notice
+##.ad-placement
+##.ad-placeholder
+##.ad-responsive
+##.ad-section
+##.ad-sidebar
+##.ad-slot
 ##.ad-space
+##.ad-spot
+##.ad-sticky
+##.ad-unit
+##.ad-wrapper
 ##.ad-zone
-##.ads-area
-##.advertisement-block
-##.adsense-ad
+##.ads-container
+##.ads-holder
+##.ads-wrapper
+##.adsbox
+##.advert-banner
+##.advert-box
+##.advert-container
+##.advert-frame
+##.advert-holder
+##.advert-placement
+##.advert-slot
+##.advert-wrapper
+##.advertisement
+##.advertising-container
 ##.banner-ad
+##.banner-advert
+##.banner-container
+##.banner-wrapper
+##.commercial-unit
+##.dfp-ad
+##.dfp-tag
+##.display-ad
+##.google-ad
+##.google-ads
+##.google-advertisement
+##.header-ad
+##.in-feed-ad
+##.inline-ad
+##.leaderboard-ad
+##.masthead-ad
+##.native-ad
+##.native-ad-container
+##.native-ad-unit
+##.native-advertisement
+##.outbrain-ad
+##.outbrain-widget
+##.outbrain_widget
+##.OUTBRAIN
+##.partner-ad
+##.partner-content
+##.promoted-ad
+##.promoted-post
+##.promoted-tweet
+##.promoted-video
+##.recom-wrapper
+##.sidebar-ad
+##.sponsor-ad
+##.sponsor-box
+##.sponsor-content
+##.sponsor-post
+##.sponsor-tile
 ##.sponsored-ad
-##.adserver
-##ins.adsbygoogle
-##[id^="div-gpt-ad-"]
-##[id^="dfp-ad-"]
-##[id^="google_ads_iframe"]
-##[id^="google_ads_div_"]
-##[id^="aswift_"]
-##[data-ad-slot]
+##.sponsored-box
+##.sponsored-card
+##.sponsored-content
+##.sponsored-feed
+##.sponsored-item
+##.sponsored-link
+##.sponsored-links
+##.sponsored-listing
+##.sponsored-post
+##.sponsored-product
+##.sponsored-result
+##.sponsored-tile
+##.taboola-ad
+##.taboola-container
+##.taboola-widget
+##.top-ad
+##.trc_related_container
+##.video-ad-container
+
+! --- Common Ad Attributes & Custom Tags ---
+##[data-ad]
 ##[data-ad-unit]
-##[data-adunit]
+##[data-ad-slot]
 ##[data-ad-client]
+##[data-ad-name]
+##[data-ad-placeholder]
 ##[data-google-query-id]
-##iframe[id^="google_ads_"]
-##iframe[name^="google_ads_"]
-##iframe[id^="aswift_"]
+##[data-dfp-id]
+##[id^="div-gpt-ad"]
+##[id^="google_ads_iframe"]
+##[id^="aswift_"]
+##[id^="ad-banner"]
+##[id^="ad_banner"]
+##[id^="ad-slot"]
+##[id^="ad_slot"]
+##[id^="ad-container"]
+##[id^="ad_container"]
+##[id^="ad-wrapper"]
+##[id^="ad_wrapper"]
+##[id*="taboola"]
+##[id*="outbrain"]
+##[id*="criteo"]
+##amp-ad
+##amp-embed[type="taboola"]
+##amp-embed[type="outbrain"]
+##ins.adsbygoogle
+##ins.adsbygoogle[data-ad-status="unfilled"]
+
+! --- Ad Iframes ---
 ##iframe[src*="doubleclick.net"]
 ##iframe[src*="googlesyndication.com"]
-##iframe[src*="googleadservices.com"]
+##iframe[src*="adsystem.com"]
 ##iframe[src*="adnxs.com"]
 ##iframe[src*="criteo.com"]
+##iframe[src*="rubiconproject.com"]
 ##iframe[src*="taboola.com"]
 ##iframe[src*="outbrain.com"]
-##div[class*="sponsored-post"]
-##div[class*="taboola"]
-##div[class*="outbrain"]
+##iframe[src*="openx.net"]
+##iframe[src*="pubmatic.com"]
+##iframe[id^="aswift_"]
+##iframe[id^="google_ads_frame"]
+##iframe[name^="google_ads_iframe"]
 
-! --- YouTube-Specific Cosmetic Rules ---
-! (DO NOT hide .ytp-ad-module or .video-ads - that hides the Skip Ad button!)
+! --- YouTube (Desktop & Mobile, Feed Scrolls, Shorts, Masthead) ---
+youtube.com###contents > ytd-rich-item-renderer:has(> ytd-ad-slot-renderer)
 youtube.com###masthead-ad
 youtube.com###player-ads
-youtube.com##.ytp-ad-overlay-container
-youtube.com##.ytp-ad-image-overlay
-youtube.com##.ytp-ad-text-overlay
+youtube.com###shopping-timely-shelf
+youtube.com###shorts-inner-container > .ytd-shorts:has(> .ytd-reel-video-renderer > ytd-ad-slot-renderer)
 youtube.com##.badge-style-type-ad
-youtube.com##ytd-ad-slot-renderer
-youtube.com##ytd-in-feed-ad-layout-renderer
-youtube.com##ytd-banner-promo-renderer
-youtube.com##ytd-statement-banner-renderer
-youtube.com##ytd-companion-slot-renderer
-youtube.com##ytd-action-companion-ad-renderer
-youtube.com##ytd-display-ad-renderer
-youtube.com##ytd-promoted-sparkles-web-renderer
-youtube.com##ytd-promoted-sparkles-text-search-renderer
-youtube.com##ytd-promoted-video-renderer
-youtube.com##ytd-search-pyv-renderer
-youtube.com##ytd-merch-shelf-renderer
-youtube.com##ytd-rich-item-renderer:has(ytd-ad-slot-renderer)
-youtube.com##ytd-rich-item-renderer:has(.ytd-ad-slot-renderer)
-youtube.com##ytd-rich-section-renderer:has(ytd-statement-banner-renderer)
-youtube.com##ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-ads"]
-youtube.com##ytd-reel-video-renderer:has(.ytd-ad-slot-renderer)
+youtube.com##.grid.ytd-browse > #primary > .style-scope > .ytd-rich-grid-renderer > .ytd-ad-slot-renderer
+youtube.com##.ytd-rich-item-renderer.style-scope > .ytd-rich-item-renderer > .ytd-ad-slot-renderer.style-scope
+youtube.com##.ytd-section-list-renderer > .ytd-item-section-renderer > ytd-search-pyv-renderer.ytd-item-section-renderer
 youtube.com##.ytd-shorts-ad-slot
-youtube.com##div#sparkles-container
+youtube.com##.ytd-two-column-browse-results-renderer > ytd-rich-grid-renderer > #masthead-ad.ytd-rich-grid-renderer
+youtube.com##.ytd-watch-flexy > .ytd-watch-next-secondary-results-renderer > ytd-ad-slot-renderer
+youtube.com##.ytd-watch-flexy > ytd-merch-shelf-renderer > #main.ytd-merch-shelf-renderer
+youtube.com##.ytp-ad-image-overlay
+youtube.com##.ytp-ad-overlay-container
+youtube.com##.ytp-ad-text-overlay
+youtube.com##ytd-action-companion-ad-renderer
+youtube.com##ytd-ad-slot-renderer
+youtube.com##ytd-banner-promo-renderer
+youtube.com##ytd-companion-slot-renderer
+youtube.com##ytd-display-ad-renderer
+youtube.com##ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-ads"]
+youtube.com##ytd-in-feed-ad-layout-renderer
+youtube.com##ytd-item-section-renderer > .ytd-item-section-renderer > ytd-ad-slot-renderer
+youtube.com##ytd-merch-shelf-renderer
+youtube.com##ytd-promoted-sparkles-text-search-renderer
+youtube.com##ytd-promoted-sparkles-web-renderer
+youtube.com##ytd-promoted-video-renderer
+youtube.com##ytd-reel-video-renderer:has(.ytd-ad-slot-renderer)
+youtube.com##ytd-rich-item-renderer:has(.ytd-ad-slot-renderer)
+youtube.com##ytd-rich-item-renderer:has(> #content > ytd-ad-slot-renderer)
+youtube.com##ytd-rich-item-renderer:has(ytd-ad-slot-renderer)
+youtube.com##ytd-rich-section-renderer:has(ytd-statement-banner-renderer)
+youtube.com##ytd-search-pyv-renderer
+youtube.com##ytd-statement-banner-renderer
+m.youtube.com##lazy-list > ad-slot-renderer
+m.youtube.com##ytm-companion-slot[data-content-type] > ytm-companion-ad-renderer
+m.youtube.com##ytm-rich-item-renderer > ad-slot-renderer
 
-! Other domain-specific cosmetic rules
-twitter.com,x.com##div[data-testid="placementTracking"]
-reddit.com##div.promotedlink
-news.ycombinator.com##.sponsor-banner
+! --- CNN & Major News Portals ---
+cnn.com###js-outbrain-rightrail-ads-module
+cnn.com###partner-zone
+cnn.com###sponsored-outbrain-1
+cnn.com##.ad-feedback__modal
+cnn.com##.ad-slot-dynamic
+cnn.com##.ad-slot-header__wrapper
+cnn.com##.ad-slot__ad-wrapper
+cnn.com##.featured-product__card
+cnn.com##.product-offer-card-container_related-products
+cnn.com##.stack__ads
+cnn.com##.zone__ads
+cnn.com##[data-zone-label="Paid Partner Content"]
+cnn.com##.outbrain_widget
+cnn.com##div[id*="outbrain"]
+cnn.com##div[id*="taboola"]
+forbes.com##.fbs-ad
+forbes.com##.top-ad-container
+nytimes.com##.ad
+nytimes.com##.expanded-dock
+bbc.com##.ad-slot
+bbc.com##.ad-unit
+reuters.com##div[class*="ad-slot"]
+reuters.com##div[class*="sponsored-card"]
+bloomberg.com##.leaderboard-wrapper
+bloomberg.com##.ad-placeholder
 
-! Cosmetic exceptions (disable selector for specific host)
+! --- Social Media Sponsored Feeds ---
+reddit.com##shreddit-ad-post
+reddit.com##div[data-testid="ad-post"]
+reddit.com##div[data-adclicklocation]
+reddit.com##.promotedlink
+reddit.com##.promoted
+twitter.com##[data-testid="placementTracking"]
+twitter.com##article:has([data-testid="ad-label"])
+x.com##[data-testid="placementTracking"]
+x.com##article:has([data-testid="ad-label"])
+
+! --- Google Search Sponsored Ads ---
+google.com##div[data-text-ad]
+google.com##div[aria-label="Ads"]
+google.com##div[id="tvcap"]
+google.com##div[id="bottomads"]
+google.com##div[data-ad-preview]
+google.com##div:has(> .commercial-unit)
+google.com##.commercial-unit-desktop-top
+google.com##.commercial-unit-desktop-rhs
+google.com##.pla-unit
+google.com##[data-pla-slot]
+
+! --- Amazon Sponsored Products & Carousels ---
+amazon.com##.s-result-item.AdHolder
+amazon.com##.s-result-item:has(.puis-sponsored-label-text)
+amazon.com##.s-result-item:has([aria-label*="Sponsored"])
+amazon.com##div:has(> .a-carousel-card:has(.puis-sponsored-label-text))
+amazon.com##div:has(> .celwidget:has([aria-label*="Sponsored"]))
+amazon.com##[data-ad-type]
+
+! --- Twitch & Video Streaming ---
+twitch.tv##.video-player__default-prompt
+twitch.tv##div[data-test-selector="stream-banner-ad"]
+twitch.tv##.channel-root__right-column:has(.top-ad)
+twitch.tv##.whisper-thread__ad
+
+! --- Yahoo, MSN & Portals ---
+yahoo.com##.native-ad
+yahoo.com##.gemini-ad
+yahoo.com##div[data-module="Ads"]
+msn.com##.ad-container
+msn.com##div[data-ad-slot]
+
+! --- Test Exceptions ---
 news.ycombinator.com#@#.sponsor-banner
-github.com#@#.ad-banner

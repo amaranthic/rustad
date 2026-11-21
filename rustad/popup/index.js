@@ -1,4 +1,11 @@
 const toggle = document.getElementById("toggle");
+const versionEl = document.getElementById("version");
+
+// Display dynamic version from manifest
+const manifest = chrome.runtime.getManifest();
+if (versionEl && manifest && manifest.version) {
+  versionEl.textContent = `v${manifest.version}`;
+}
 
 // Read current enabled state
 chrome.storage.local.get({ enabled: true }, (data) => {

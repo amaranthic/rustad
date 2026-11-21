@@ -1,0 +1,21 @@
+! ==============================================================================
+! RUSTAD SURGICAL SCRIPTLETS (rules/scriptlets.txt)
+! Defuses YouTube player ads and anti-adblock detection in the page MAIN world.
+! ==============================================================================
+
+! --- YouTube Video Player Ad Neutralization ---
+youtube.com##+js(set, ytInitialPlayerResponse.adPlacements, undefined)
+youtube.com##+js(set, ytInitialPlayerResponse.playerAds, undefined)
+youtube.com##+js(set, ytInitialPlayerResponse.adSlots, undefined)
+youtube.com##+js(set, ytInitialPlayerResponse.adBreakHeartbeatParams, undefined)
+youtube.com##+js(set, playerResponse.adPlacements, undefined)
+youtube.com##+js(set, playerResponse.playerAds, undefined)
+youtube.com##+js(set, playerResponse.adSlots, undefined)
+
+! --- Anti-Adblock Defusers ---
+forbes.com##+js(abort-on-property-read, canRunAds)
+businessinsider.com##+js(set, isAdBlockerActive, false)
+businessinsider.com##+js(set, hasAdBlocker, false)
+bloomberg.com##+js(abort-on-property-read, canRunAds)
+reuters.com##+js(set, adsBlocked, false)
+adblock-tester.com##+js(set, canRunAds, true)

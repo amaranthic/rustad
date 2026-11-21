@@ -1,17 +1,63 @@
 ! ==============================================================================
-! RUSTAD PATTERN BLOCK LIST (rules/patterns.txt)
-! Path, wildcard (*), and separator (^) network blocks
+! RUSTAD EXTREME AD PATTERNS (rules/patterns.txt)
+! High-impact URL path and wildcard filters targeting ads, popups, and telemetry.
 ! ==============================================================================
-/ads.js
-/banner-ad.js
-/pagead/
-/ad-delivery/*
-||example.com/tracking/*
-*advertising*
-/ad-banner-*.png
 
-! --- YouTube Ad Endpoints ---
-||youtube.com/api/stats/ads*
-||youtube.com/pagead/*
-||youtube.com/ptracking*
-||youtube.com/get_midroll_info*
+! --- Google / AdSense / DoubleClick Core Paths ---
+*/adsbygoogle.js*
+*/pagead/js/*
+*/pagead/expansion_embed*
+*/pagead/interaction/*
+*/pagead/lvz*
+*/pagead/gen_204*
+*googlesyndication.com/pagead/*
+*googleadservices.com/pagead/*
+*/adservice/google/*
+*/pagead/show_ads.js*
+*ad_break*
+*api/stats/ads*
+*youtube.com/pagead/*
+*youtube.com/ptracking*
+
+! --- Telemetry & Analytics Tested by AdBlock-Tester & Browsers ---
+*/analytics.js*
+*/gtm.js*
+*/gtag/js*
+*/hotjar-*.js*
+*/sentry*.min.js*
+*bundle.run/browser.sentry*
+*sentry-cdn.com*
+*/beacon.min.js*
+*/beacon.js*
+*/bat.js*
+*/fbevents.js*
+*/pixel.js*
+*/matomo.js*
+*/piwik.js*
+
+! --- Generic Ad Scripts, Banners & Popups ---
+*pr_advertising_ads_banner*
+*banner.gif*
+*banner.png*
+*banner.swf*
+*/ads/*
+*/ad.js*
+*/ads.js*
+*/adframe.js*
+*/advert.js*
+*/advertising.js*
+*/advertisement.js*
+*/adserver/*
+*/ad_banner*
+*/banner_ad*
+*banner-ad*
+*/banners/*
+*/popunder.js*
+*/popup_ad*
+*/prebid*.js*
+*/outbrain.js*
+*/taboola*.js*
+*/sponsor_ad*
+*/native_ad*
+*/vignette*
+*/interstitial*

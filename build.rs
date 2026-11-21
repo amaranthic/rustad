@@ -11,14 +11,65 @@ fn clean_domain(raw: &str) -> String {
     if let Some(stripped) = s.strip_prefix("||") {
         s = stripped;
     }
+    if let Some(stripped) = s.strip_prefix('*') {
+        s = stripped;
+    }
+    if let Some(stripped) = s.strip_prefix('.') {
+        s = stripped;
+    }
     if let Some(stripped) = s.strip_suffix('^') {
         s = stripped;
     }
     s.trim().to_ascii_lowercase()
 }
 
+fn is_valid_domain(d: &str) -> bool {
+    if d.is_empty() || d.len() > 253 || !d.contains('.') {
+        return false;
+    }
+    if d.starts_with('.') || d.ends_with('.') || d.starts_with('-') || d.ends_with('-') {
+        return false;
+    }
+    d.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'.' || b == b'-')
+}
+
 fn escape_json(s: &str) -> String {
     s.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
+fn is_valid_url_filter(s: &str) -> bool {
+    if s.is_empty() || s.len() > 256 || !s.is_ascii() {
+        return false;
+    }
+    // Cannot contain whitespace or control chars
+    if s.bytes().any(|b| b <= b' ' || b == 127) {
+        return false;
+    }
+    // Cannot contain cosmetic or regex syntax
+    if s.contains('#') || s.contains('\\') || s.contains('[') || s.contains(']') || s.contains('{') || s.contains('}') {
+        return false;
+    }
+    // Cannot be a regex rule /.../
+    if s.starts_with('/') && s.ends_with('/') && s.len() > 2 {
+        return false;
+    }
+    // Cannot start with ||* or |* or ^
+    if s.starts_with("||*") || s.starts_with("|*") || s.starts_with('^') {
+        return false;
+    }
+    // Cannot end with *| or ^|
+    if s.ends_with("*|") || s.ends_with("^|") {
+        return false;
+    }
+    // Cannot contain || anywhere except at the start
+    if s.len() > 2 && s[2..].contains("||") {
+        return false;
+    }
+    // Cannot contain consecutive wildcards
+    if s.contains("**") {
+        return false;
+    }
+    true
 }
 
 fn main() {
@@ -26,6 +77,7 @@ fn main() {
     println!("cargo:rerun-if-changed=rules/patterns.txt");
     println!("cargo:rerun-if-changed=rules/exceptions.txt");
     println!("cargo:rerun-if-changed=rules/cosmetics.txt");
+    println!("cargo:rerun-if-changed=rules/scriptlets.txt");
 
     let mut blocked_domains = BTreeSet::new();
     let mut blocked_patterns = BTreeSet::new();
@@ -34,6 +86,7 @@ fn main() {
     let mut global_cosmetics = BTreeSet::new();
     let mut domain_cosmetics = BTreeSet::new();
     let mut cosmetic_exceptions = BTreeSet::new();
+    let mut domain_scriptlets = BTreeSet::new();
 
     // 1. Process rules/domains.txt
     if let Ok(content) = fs::read_to_string("rules/domains.txt") {
@@ -119,9 +172,55 @@ fn main() {
         }
     }
 
+    // 5. Process rules/scriptlets.txt
+    if let Ok(content) = fs::read_to_string("rules/scriptlets.txt") {
+        for line in content.lines() {
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('!') || line.starts_with('[') {
+                continue;
+            }
+
+            if let Some(pos) = line.find("##+js(") {
+                let domains_part = &line[..pos];
+                let body = line[pos + 6..].trim();
+                let scriptlet = body.strip_suffix(')').unwrap_or(body).trim();
+                for dom in domains_part.split(',') {
+                    let d = clean_domain(dom);
+                    if !d.is_empty() && !scriptlet.is_empty() {
+                        domain_scriptlets.insert((d, scriptlet.to_string()));
+                    }
+                }
+            }
+        }
+    }
+
     // Ensure output directories exist
     let _ = fs::create_dir_all("src/generated");
     let _ = fs::create_dir_all("rustad");
+
+    // -------------------------------------------------------------------------
+    // Calculate compile-time buffer size for cosmetic CSS
+    // -------------------------------------------------------------------------
+    let global_css_len: usize = global_cosmetics.iter().map(|s| s.len() + 2).sum();
+    let mut domain_sizes: std::collections::BTreeMap<&str, usize> = std::collections::BTreeMap::new();
+    for (d, s) in &domain_cosmetics {
+        *domain_sizes.entry(d.as_str()).or_default() += s.len() + 2;
+    }
+    let max_domain_selectors_len = domain_sizes.values().max().copied().unwrap_or(0);
+    let suffix_len = 512;
+    let worst_case_len = global_css_len + max_domain_selectors_len + suffix_len + 1024;
+    let wasm_page = 65536;
+    let max_cosmetic_len = std::cmp::max(wasm_page, worst_case_len.div_ceil(wasm_page) * wasm_page);
+
+    // -------------------------------------------------------------------------
+    // Calculate compile-time buffer size for scriptlet JSON
+    // -------------------------------------------------------------------------
+    let mut scriptlet_domain_sizes: std::collections::BTreeMap<&str, usize> = std::collections::BTreeMap::new();
+    for (d, s) in &domain_scriptlets {
+        *scriptlet_domain_sizes.entry(d.as_str()).or_default() += s.len() + 4;
+    }
+    let max_scriptlet_domain_len = scriptlet_domain_sizes.values().max().copied().unwrap_or(0);
+    let max_scriptlets_len = std::cmp::max(8192, (max_scriptlet_domain_len + 512).next_power_of_two());
 
     // -------------------------------------------------------------------------
     // Emit src/generated/rules.rs
@@ -129,6 +228,13 @@ fn main() {
     let mut out_rs = String::new();
     out_rs.push_str("// AUTO-GENERATED BY build.rs — DO NOT EDIT MANUALLY\n");
     out_rs.push_str("//! Auto-generated static filter rule definitions.\n\n");
+
+    out_rs.push_str("/// Compile-time calculated maximum output buffer size for cosmetic CSS.\n");
+    out_rs.push_str("/// Sized to fit the worst-case combination of global and domain rules in whole 64KB WASM pages.\n");
+    out_rs.push_str(&format!("pub const MAX_COSMETIC_CSS_LEN: usize = {};\n\n", max_cosmetic_len));
+
+    out_rs.push_str("/// Compile-time calculated maximum buffer size for scriptlet JSON output.\n");
+    out_rs.push_str(&format!("pub const MAX_SCRIPTLETS_LEN: usize = {};\n\n", max_scriptlets_len));
 
     out_rs.push_str("/// Lexicographically sorted slice of blocked domain names.\n");
     out_rs.push_str("pub static BLOCKED_DOMAINS: &[&str] = &[\n");
@@ -177,6 +283,13 @@ fn main() {
     for (d, s) in &cosmetic_exceptions {
         out_rs.push_str(&format!("    ({:?}, {:?}),\n", d, s));
     }
+    out_rs.push_str("];\n\n");
+
+    out_rs.push_str("/// Domain-specific scriptlet injection rules sorted by domain.\n");
+    out_rs.push_str("pub static DOMAIN_SCRIPTLETS: &[(&str, &str)] = &[\n");
+    for (d, s) in &domain_scriptlets {
+        out_rs.push_str(&format!("    ({:?}, {:?}),\n", d, s));
+    }
     out_rs.push_str("];\n");
 
     fs::write("src/generated/rules.rs", out_rs).expect("Failed to write src/generated/rules.rs");
@@ -192,6 +305,7 @@ fn main() {
 
     // 1. Exception rules (priority 2, allow)
     for d in &allowed_domains {
+        if !is_valid_domain(d) { continue; }
         if rule_id > 1 { out_json.push_str(",\n"); }
         out_json.push_str(&format!(
             "  {{\"id\":{},\"priority\":2,\"action\":{{\"type\":\"allow\"}},\"condition\":{{\"urlFilter\":\"||{}^\",\"resourceTypes\":{}}}}}",
@@ -200,6 +314,7 @@ fn main() {
         rule_id += 1;
     }
     for p in &allowed_patterns {
+        if !is_valid_url_filter(p) { continue; }
         if rule_id > 1 { out_json.push_str(",\n"); }
         out_json.push_str(&format!(
             "  {{\"id\":{},\"priority\":2,\"action\":{{\"type\":\"allow\"}},\"condition\":{{\"urlFilter\":\"{}\",\"resourceTypes\":{}}}}}",
@@ -208,22 +323,24 @@ fn main() {
         rule_id += 1;
     }
 
-    // 2. Blocked domain rules (priority 1, block)
-    for d in &blocked_domains {
-        if rule_id > 1 { out_json.push_str(",\n"); }
-        out_json.push_str(&format!(
-            "  {{\"id\":{},\"priority\":1,\"action\":{{\"type\":\"block\"}},\"condition\":{{\"urlFilter\":\"||{}^\",\"resourceTypes\":{}}}}}",
-            rule_id, escape_json(d), resource_types
-        ));
-        rule_id += 1;
-    }
-
-    // 3. Blocked pattern rules (priority 1, block)
+    // 2. Blocked pattern rules (priority 1, block - highest impact paths/wildcards)
     for p in &blocked_patterns {
+        if !is_valid_url_filter(p) { continue; }
         if rule_id > 1 { out_json.push_str(",\n"); }
         out_json.push_str(&format!(
             "  {{\"id\":{},\"priority\":1,\"action\":{{\"type\":\"block\"}},\"condition\":{{\"urlFilter\":\"{}\",\"resourceTypes\":{}}}}}",
             rule_id, escape_json(p), resource_types
+        ));
+        rule_id += 1;
+    }
+
+    // 3. Blocked domain rules (priority 1, block)
+    for d in &blocked_domains {
+        if !is_valid_domain(d) { continue; }
+        if rule_id > 1 { out_json.push_str(",\n"); }
+        out_json.push_str(&format!(
+            "  {{\"id\":{},\"priority\":1,\"action\":{{\"type\":\"block\"}},\"condition\":{{\"urlFilter\":\"||{}^\",\"resourceTypes\":{}}}}}",
+            rule_id, escape_json(d), resource_types
         ));
         rule_id += 1;
     }

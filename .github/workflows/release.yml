@@ -1,0 +1,148 @@
+name: Automated Release & Rule Engine Build
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Daily routine at 02:00 UTC
+  workflow_dispatch:      # Manual trigger from GitHub Actions UI
+  push:
+    tags:
+      - 'v*'             # Manual engine release trigger on tag push
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy
+
+      - name: Run Engine Tests
+        run: cargo test --verbose
+
+      - name: Run Linter (Clippy)
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Determine Release Mode & Changes
+        id: release_check
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "Execution triggered by tag push: ${{ github.ref_name }}"
+            echo "is_tag_push=true" >> $GITHUB_OUTPUT
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "RELEASE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+            EXT_VER="${{ github.ref_name }}"
+            EXT_VER="${EXT_VER#v}"
+            echo "EXT_VERSION=$EXT_VER" >> $GITHUB_ENV
+          else
+            echo "Execution triggered by schedule / workflow_dispatch"
+            echo "is_tag_push=false" >> $GITHUB_OUTPUT
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+            echo "Latest release tag: $LATEST_TAG"
+            if [ -z "$LATEST_TAG" ]; then
+              echo "No previous tags found. Release required."
+              echo "has_changes=true" >> $GITHUB_OUTPUT
+            else
+              DIFF_COUNT=$(git rev-list "$LATEST_TAG"..HEAD --count)
+              echo "Commits since last release tag: $DIFF_COUNT"
+              if [ "$DIFF_COUNT" -gt 0 ]; then
+                echo "has_changes=true" >> $GITHUB_OUTPUT
+              else
+                echo "No new commits since last release. Skipping release."
+                echo "has_changes=false" >> $GITHUB_OUTPUT
+              fi
+            fi
+          fi
+
+      - name: Prepare Extension Version & Compile Engine
+        if: steps.release_check.outputs.has_changes == 'true'
+        run: |
+          if [ "${{ steps.release_check.outputs.is_tag_push }}" = "true" ]; then
+            echo "Using manual tag release version: $EXT_VERSION ($RELEASE_TAG)"
+            sed -i "s/\"version\": \".*\"/\"version\": \"$EXT_VERSION\"/" rustad/manifest.json
+          else
+            # Automated bump for routine rules / code commits
+            CURRENT_VER=$(grep '"version":' rustad/manifest.json | head -n 1 | cut -d '"' -f 4)
+            echo "Current extension manifest version: $CURRENT_VER"
+
+            MAJOR=$(echo "$CURRENT_VER" | cut -d '.' -f 1)
+            MINOR=$(echo "$CURRENT_VER" | cut -d '.' -f 2)
+            PATCH=$(echo "$CURRENT_VER" | cut -d '.' -f 3)
+            NEW_PATCH=$((PATCH + 1))
+            NEW_VER="${MAJOR}.${MINOR}.${NEW_PATCH}"
+            echo "Bumping extension version to: $NEW_VER"
+
+            sed -i "s/\"version\": \".*\"/\"version\": \"$NEW_VER\"/" rustad/manifest.json
+            echo "EXT_VERSION=$NEW_VER" >> $GITHUB_ENV
+            echo "RELEASE_TAG=v$NEW_VER" >> $GITHUB_ENV
+          fi
+
+          # Compile WebAssembly engine release
+          cargo build --target wasm32-unknown-unknown --release
+          cp target/wasm32-unknown-unknown/release/rustad.wasm rustad/rustad.wasm
+
+      - name: Package Release Assets (.zip and .crx)
+        if: steps.release_check.outputs.has_changes == 'true'
+        run: |
+          ZIP_NAME="rustad_${RELEASE_TAG}.zip"
+          CRX_NAME="rustad_${RELEASE_TAG}.crx"
+
+          # 1. Package .zip archive
+          cd rustad
+          zip -r "../$ZIP_NAME" . -x "_metadata/*" "*.DS_Store"
+          cd ..
+          ls -lh "$ZIP_NAME"
+
+          # 2. Generate signing key and package .crx
+          openssl genrsa 2048 > key.pem
+          npx -y crx pack rustad -p key.pem -o "$CRX_NAME"
+          ls -lh "$CRX_NAME"
+
+          echo "ASSET_ZIP=$ZIP_NAME" >> $GITHUB_ENV
+          echo "ASSET_CRX=$CRX_NAME" >> $GITHUB_ENV
+
+      - name: Commit and Push Version Bump (Automated Routine Only)
+        if: steps.release_check.outputs.has_changes == 'true' && steps.release_check.outputs.is_tag_push != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add rustad/manifest.json rustad/rules.json rustad/rustad.wasm src/generated/rules.rs
+          git commit -m "chore(release): bump extension to ${{ env.RELEASE_TAG }} [skip ci]
+
+          Automated release build with updated ruleset and WebAssembly binary.
+          - Updated declarativeNetRequest ruleset
+          - Compiled WebAssembly release binary
+          - Bumped manifest version"
+          git tag -a "${{ env.RELEASE_TAG }}" -m "Release ${{ env.RELEASE_TAG }}"
+          git push origin main --tags
+
+      - name: Publish GitHub Release
+        if: steps.release_check.outputs.has_changes == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: "Rustad ${{ env.RELEASE_TAG }}"
+          body: |
+            ### 🚀 Rustad Release (${{ env.RELEASE_TAG }})
+
+            High-performance, zero-dependency browser-agnostic ad blocking engine.
+
+            #### Release Assets:
+            - **`${{ env.ASSET_CRX }}`**: Chrome / Chromium / Brave / Edge packaged extension.
+            - **`${{ env.ASSET_ZIP }}`**: Load-unpacked ZIP package for standard Chrome Developer Mode.
+
+            #### Installation Guide:
+            * **Brave / Edge / Chromium**: Download the `.crx` file and drag it into `chrome://extensions`.
+            * **Standard Google Chrome**: Download the `.zip` file, unzip it, go to `chrome://extensions` with **Developer Mode** enabled, and click **Load unpacked**.
+          files: |
+            ${{ env.ASSET_ZIP }}
+            ${{ env.ASSET_CRX }}

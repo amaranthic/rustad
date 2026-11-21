@@ -1,8 +1,10 @@
 ! ==============================================================================
-! RUSTAD EXCEPTIONS LIST (rules/exceptions.txt)
-! Highest-priority allow / whitelist rules (@@)
+! RUSTAD EXCEPTIONS (rules/exceptions.txt)
+! Strict whitelist exceptions only. NO allowing third-party ad networks.
 ! ==============================================================================
-@@||googleadservices.com/pagead/aclk?*
-@@||example.com/safe-analytics.js
-@@||adservice.google.com/essential.js
-@@||cdn.allowed-domain.org^
+@@||github.com^
+@@||raw.githubusercontent.com^
+@@||cdnjs.cloudflare.com^
+@@||cdn.jsdelivr.net^
+@@||unpkg.com^
+@@||adservice.google.com/essential.js^

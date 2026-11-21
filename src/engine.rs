@@ -71,15 +71,18 @@ pub fn check_url(url: &str) -> Verdict {
 /// Generates cosmetic CSS hiding rules for `url` directly into `out`.
 ///
 /// Hardened to completely collapse layout boxes, padding, margins, and borders.
-/// Returns the number of bytes written.
+/// Guaranteed to leave room for the CSS rule suffix so rules are always valid.
 pub fn write_cosmetic_css(url: &str, out: &mut [u8]) -> usize {
     let host = extract_host(url);
     let mut written = 0;
     let mut count = 0;
 
-    let append = |s: &str, out: &mut [u8], written: &mut usize| -> bool {
+    let suffix = " { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; height: 0 !important; min-height: 0 !important; max-height: 0 !important; width: 0 !important; min-width: 0 !important; max-width: 0 !important; margin: 0 !important; padding: 0 !important; border: none !important; overflow: hidden !important; line-height: 0 !important; font-size: 0 !important; }\n";
+    let max_content_len = out.len().saturating_sub(suffix.len() + 16);
+
+    let append = |s: &str, out: &mut [u8], written: &mut usize, limit: usize| -> bool {
         let bytes = s.as_bytes();
-        if *written + bytes.len() <= out.len() {
+        if *written + bytes.len() <= limit {
             out[*written..*written + bytes.len()].copy_from_slice(bytes);
             *written += bytes.len();
             true
@@ -91,10 +94,10 @@ pub fn write_cosmetic_css(url: &str, out: &mut [u8]) -> usize {
     // 1. Global selectors
     for &sel in global_selectors() {
         if !is_excepted(host, sel) {
-            if count > 0 && !append(", ", out, &mut written) {
+            if count > 0 && !append(", ", out, &mut written, max_content_len) {
                 break;
             }
-            if !append(sel, out, &mut written) {
+            if !append(sel, out, &mut written, max_content_len) {
                 break;
             }
             count += 1;
@@ -104,10 +107,10 @@ pub fn write_cosmetic_css(url: &str, out: &mut [u8]) -> usize {
     // 2. Domain-specific selectors
     for_each_domain_selector(host, |sel| {
         if !is_excepted(host, sel) {
-            if count > 0 && !append(", ", out, &mut written) {
+            if count > 0 && !append(", ", out, &mut written, max_content_len) {
                 return;
             }
-            if !append(sel, out, &mut written) {
+            if !append(sel, out, &mut written, max_content_len) {
                 return;
             }
             count += 1;
@@ -115,9 +118,12 @@ pub fn write_cosmetic_css(url: &str, out: &mut [u8]) -> usize {
     });
 
     if count > 0 {
-        // Hardened CSS collapse: forces zero dimensions, zero margins/padding, and hides element
-        let suffix = " { display: none !important; visibility: hidden !important; height: 0 !important; min-height: 0 !important; max-height: 0 !important; width: 0 !important; margin: 0 !important; padding: 0 !important; border: none !important; }\n";
-        append(suffix, out, &mut written);
+        // Append closing collapse styles
+        let suffix_bytes = suffix.as_bytes();
+        if written + suffix_bytes.len() <= out.len() {
+            out[written..written + suffix_bytes.len()].copy_from_slice(suffix_bytes);
+            written += suffix_bytes.len();
+        }
     }
 
     written
@@ -126,7 +132,7 @@ pub fn write_cosmetic_css(url: &str, out: &mut [u8]) -> usize {
 /// Generates cosmetic CSS as a `String` (useful for native applications and tests).
 #[must_use]
 pub fn get_cosmetic_css(url: &str) -> String {
-    let mut buffer = [0u8; 8192];
+    let mut buffer = vec![0u8; crate::rules::MAX_COSMETIC_CSS_LEN];
     let len = write_cosmetic_css(url, &mut buffer);
     String::from_utf8_lossy(&buffer[..len]).to_string()
 }
