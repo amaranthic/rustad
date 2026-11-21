@@ -1,0 +1,23 @@
+! ==============================================================================
+! RUSTAD COSMETIC LIST (rules/cosmetics.txt)
+! Global hides (##), domain-specific hides, and cosmetic exceptions (#@#)
+! ==============================================================================
+! Global cosmetic hiding rules
+##.ad-banner
+##.ad-container
+##.advertisement-block
+##.adsense-ad
+##[id^="google_ads_iframe"]
+##div[class*="sponsored-post"]
+
+! Domain-specific cosmetic rules
+youtube.com###masthead-ad
+youtube.com###player-ads
+youtube.com##ytd-ad-slot-renderer
+twitter.com,x.com##div[data-testid="placementTracking"]
+reddit.com##div.promotedlink
+news.ycombinator.com##.sponsor-banner
+
+! Cosmetic exceptions (disable selector for specific host)
+news.ycombinator.com#@#.sponsor-banner
+github.com#@#.ad-banner

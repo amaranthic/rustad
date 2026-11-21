@@ -1,0 +1,17 @@
+! ==============================================================================
+! RUSTAD DOMAIN BLOCK LIST (rules/domains.txt)
+! High-speed network domain blocks
+! ==============================================================================
+||doubleclick.net^
+||googlesyndication.com^
+||googleadservices.com^
+||adnxs.com^
+||scorecardresearch.com^
+||taboola.com^
+||outbrain.com^
+||adroll.com^
+||criteo.com^
+||popads.net^
+||propellerads.com^
+||adservice.google.com^
+||pagead2.googlesyndication.com^

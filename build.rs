@@ -1,0 +1,186 @@
+// ==============================================================================
+// RUSTAD BUILD SCRIPT (build.rs)
+// Parses rules/ folder at compile time and emits src/generated/rules.rs
+// ==============================================================================
+
+use std::collections::BTreeSet;
+use std::fs;
+use std::path::Path;
+
+fn clean_domain(raw: &str) -> String {
+    let mut s = raw.trim();
+    if let Some(stripped) = s.strip_prefix("||") {
+        s = stripped;
+    }
+    if let Some(stripped) = s.strip_suffix('^') {
+        s = stripped;
+    }
+    s.trim().to_ascii_lowercase()
+}
+
+fn main() {
+    println!("cargo:rerun-if-changed=rules/domains.txt");
+    println!("cargo:rerun-if-changed=rules/patterns.txt");
+    println!("cargo:rerun-if-changed=rules/exceptions.txt");
+    println!("cargo:rerun-if-changed=rules/cosmetics.txt");
+
+    let mut blocked_domains = BTreeSet::new();
+    let mut blocked_patterns = BTreeSet::new();
+    let mut allowed_domains = BTreeSet::new();
+    let mut allowed_patterns = BTreeSet::new();
+    let mut global_cosmetics = BTreeSet::new();
+    let mut domain_cosmetics = BTreeSet::new();
+    let mut cosmetic_exceptions = BTreeSet::new();
+
+    // 1. Process rules/domains.txt
+    if let Ok(content) = fs::read_to_string("rules/domains.txt") {
+        for line in content.lines() {
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('!') || line.starts_with('[') {
+                continue;
+            }
+            let dom = clean_domain(line);
+            if !dom.is_empty() {
+                blocked_domains.insert(dom);
+            }
+        }
+    }
+
+    // 2. Process rules/patterns.txt
+    if let Ok(content) = fs::read_to_string("rules/patterns.txt") {
+        for line in content.lines() {
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('!') || line.starts_with('[') {
+                continue;
+            }
+            blocked_patterns.insert(line.to_string());
+        }
+    }
+
+    // 3. Process rules/exceptions.txt
+    if let Ok(content) = fs::read_to_string("rules/exceptions.txt") {
+        for line in content.lines() {
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('!') || line.starts_with('[') {
+                continue;
+            }
+            let rule = if let Some(stripped) = line.strip_prefix("@@") {
+                stripped.trim()
+            } else {
+                line
+            };
+
+            // Pure domain exception: starts with ||, ends with ^, no path or wildcards
+            if rule.starts_with("||") && rule.ends_with('^') && !rule[2..rule.len()-1].contains('/') && !rule[2..rule.len()-1].contains('*') {
+                let dom = clean_domain(rule);
+                if !dom.is_empty() {
+                    allowed_domains.insert(dom);
+                }
+            } else {
+                allowed_patterns.insert(rule.to_string());
+            }
+        }
+    }
+
+    // 4. Process rules/cosmetics.txt
+    if let Ok(content) = fs::read_to_string("rules/cosmetics.txt") {
+        for line in content.lines() {
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('!') || line.starts_with('[') {
+                continue;
+            }
+
+            if let Some(pos) = line.find("#@#") {
+                // Cosmetic exception
+                let domains_part = &line[..pos];
+                let selector = line[pos + 3..].trim();
+                for dom in domains_part.split(',') {
+                    let d = clean_domain(dom);
+                    if !d.is_empty() && !selector.is_empty() {
+                        cosmetic_exceptions.insert((d, selector.to_string()));
+                    }
+                }
+            } else if line.starts_with("##") {
+                // Global cosmetic rule
+                let selector = line[2..].trim();
+                if !selector.is_empty() {
+                    global_cosmetics.insert(selector.to_string());
+                }
+            } else if let Some(pos) = line.find("##") {
+                // Domain-specific cosmetic rule
+                let domains_part = &line[..pos];
+                let selector = line[pos + 2..].trim();
+                for dom in domains_part.split(',') {
+                    let d = clean_domain(dom);
+                    if !d.is_empty() && !selector.is_empty() {
+                        domain_cosmetics.insert((d, selector.to_string()));
+                    }
+                }
+            }
+        }
+    }
+
+    // Ensure src/generated directory exists
+    let generated_dir = Path::new("src/generated");
+    if !generated_dir.exists() {
+        fs::create_dir_all(generated_dir).expect("Failed to create src/generated directory");
+    }
+
+    // Build the Rust code content
+    let mut out = String::new();
+    out.push_str("// ==============================================================================\n");
+    out.push_str("// AUTO-GENERATED BY build.rs — DO NOT EDIT MANUALLY\n");
+    out.push_str("// Pre-sorted, deduplicated static slices for zero-runtime parsing\n");
+    out.push_str("// ==============================================================================\n\n");
+
+    // BLOCKED_DOMAINS
+    out.push_str("pub static BLOCKED_DOMAINS: &[&str] = &[\n");
+    for d in &blocked_domains {
+        out.push_str(&format!("    {:?},\n", d));
+    }
+    out.push_str("];\n\n");
+
+    // BLOCKED_PATTERNS
+    out.push_str("pub static BLOCKED_PATTERNS: &[&str] = &[\n");
+    for p in &blocked_patterns {
+        out.push_str(&format!("    {:?},\n", p));
+    }
+    out.push_str("];\n\n");
+
+    // ALLOWED_DOMAINS
+    out.push_str("pub static ALLOWED_DOMAINS: &[&str] = &[\n");
+    for d in &allowed_domains {
+        out.push_str(&format!("    {:?},\n", d));
+    }
+    out.push_str("];\n\n");
+
+    // ALLOWED_PATTERNS
+    out.push_str("pub static ALLOWED_PATTERNS: &[&str] = &[\n");
+    for p in &allowed_patterns {
+        out.push_str(&format!("    {:?},\n", p));
+    }
+    out.push_str("];\n\n");
+
+    // GLOBAL_COSMETIC
+    out.push_str("pub static GLOBAL_COSMETIC: &[&str] = &[\n");
+    for s in &global_cosmetics {
+        out.push_str(&format!("    {:?},\n", s));
+    }
+    out.push_str("];\n\n");
+
+    // DOMAIN_COSMETIC
+    out.push_str("pub static DOMAIN_COSMETIC: &[(&str, &str)] = &[\n");
+    for (d, s) in &domain_cosmetics {
+        out.push_str(&format!("    ({:?}, {:?}),\n", d, s));
+    }
+    out.push_str("];\n\n");
+
+    // COSMETIC_EXCEPTIONS
+    out.push_str("pub static COSMETIC_EXCEPTIONS: &[(&str, &str)] = &[\n");
+    for (d, s) in &cosmetic_exceptions {
+        out.push_str(&format!("    ({:?}, {:?}),\n", d, s));
+    }
+    out.push_str("];\n");
+
+    fs::write("src/generated/rules.rs", out).expect("Failed to write src/generated/rules.rs");
+}

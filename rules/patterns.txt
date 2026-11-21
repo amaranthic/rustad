@@ -1,0 +1,11 @@
+! ==============================================================================
+! RUSTAD PATTERN BLOCK LIST (rules/patterns.txt)
+! Path, wildcard (*), and separator (^) network blocks
+! ==============================================================================
+/ads.js
+/banner-ad.js
+/pagead/
+/ad-delivery/*
+||example.com/tracking/*
+*advertising*
+/ad-banner-*.png

@@ -1,0 +1,8 @@
+! ==============================================================================
+! RUSTAD EXCEPTIONS LIST (rules/exceptions.txt)
+! Highest-priority allow / whitelist rules (@@)
+! ==============================================================================
+@@||googleadservices.com/pagead/aclk?*
+@@||example.com/safe-analytics.js
+@@||adservice.google.com/essential.js
+@@||cdn.allowed-domain.org^
