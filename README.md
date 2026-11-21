@@ -103,17 +103,18 @@ A background alarm periodically checks for updated rulesets, seamlessly applying
 
 ## 🚀 Installation
 
-### Option A: Packaged CRX (Brave / Edge / Chromium)
-1. Download `rustad_vX.Y.Z.crx` from the [Latest Release](https://github.com/amaranthic/rustad/releases).
-2. Open `chrome://extensions` in your browser.
-3. Enable **Developer Mode** (toggle in the top right).
-4. Drag and drop the downloaded `.crx` file directly into the extensions window.
-
-### Option B: Load Unpacked (Standard Google Chrome)
+### Option A: Load Unpacked .zip (Recommended for Standard Google Chrome)
+> [!NOTE]
+> Official Google Chrome strictly blocks off-store `.crx` drag-and-drop installations with `CRX_REQUIRED_PROOF_MISSING` (requiring Chrome Web Store cryptographic proofs). For Chrome, use the `.zip` package via **Load unpacked**:
 1. Download `rustad_vX.Y.Z.zip` from the [Latest Release](https://github.com/amaranthic/rustad/releases).
-2. Unzip the archive.
-3. Navigate to `chrome://extensions` and turn on **Developer Mode**.
-4. Click **Load unpacked** and select the unzipped `rustad` folder.
+2. Unzip the archive into a folder.
+3. Navigate to `chrome://extensions` and turn on **Developer mode** (toggle in the top-right corner).
+4. Click **Load unpacked** in the top-left and select the unzipped directory.
+
+### Option B: Packaged .crx (Brave, Edge, Chromium)
+1. Download `rustad_vX.Y.Z.crx` from the [Latest Release](https://github.com/amaranthic/rustad/releases).
+2. Open `chrome://extensions` and ensure **Developer mode** is enabled.
+3. Drag and drop the `.crx` file directly into the browser window to install.
 
 ---
 
