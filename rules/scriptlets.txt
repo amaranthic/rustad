@@ -13,6 +13,11 @@ youtube.com##+js(set, playerResponse.playerAds, undefined)
 youtube.com##+js(set, playerResponse.adSlots, undefined)
 
 ! --- Anti-Adblock Defusers ---
+*##+js(set, google_ad_status, 1)
+*##+js(set, canRunAds, true)
+*##+js(set, isAdBlockerActive, false)
+*##+js(set, adblockDetected, false)
+*##+js(set, hasAdBlocker, false)
 forbes.com##+js(abort-on-property-read, canRunAds)
 businessinsider.com##+js(set, isAdBlockerActive, false)
 businessinsider.com##+js(set, hasAdBlocker, false)

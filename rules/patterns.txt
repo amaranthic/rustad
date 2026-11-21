@@ -61,3 +61,24 @@
 */native_ad*
 */vignette*
 */interstitial*
+
+! --- Video & Streaming Mid-roll Filters ---
+*youtube.com/get_midroll_info*
+*youtube.com/api/stats/qoe?*adformat*
+*/imasdk.googleapis.com/js/sdkloader/ima3.js*
+
+! --- Publisher Ad Engines & Header Bidding ---
+*/gpt.js*
+*doubleclick.net/gampad/*
+*/header-bidding*.js*
+*/ad-loader*.js*
+*/ad_tag*.js*
+*/adsystem/*
+*/adcontent/*
+*/wp-content/plugins/ad-inserter/*
+*/wp-content/plugins/advanced-ads/*
+*/wp-content/plugins/adrotate/*
+*/popunder*.js*
+*/tabunder*.js*
+*/adnxs.com/seg*
+*/amazon-adsystem.com/aax2/*
