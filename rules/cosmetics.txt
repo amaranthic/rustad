@@ -2,13 +2,55 @@
 ! RUSTAD COSMETIC LIST (rules/cosmetics.txt)
 ! Global hides (##), domain-specific hides, and cosmetic exceptions (#@#)
 ! ==============================================================================
-! Global cosmetic hiding rules
+! Global cosmetic hiding rules & container collapse
 ##.ad-banner
 ##.ad-container
+##.ad-wrapper
+##.ad-slot
+##.ad-placeholder
+##.ad-placement
+##.ad-box
+##.ad-unit
+##.ad-space
+##.ad-zone
+##.ads-area
 ##.advertisement-block
 ##.adsense-ad
+##.banner-ad
+##.sponsored-ad
+##.adserver
+##ins.adsbygoogle
+##[id^="div-gpt-ad-"]
+##[id^="dfp-ad-"]
 ##[id^="google_ads_iframe"]
+##[id^="google_ads_div_"]
+##[id^="aswift_"]
+##[id*="ad-slot"]
+##[id*="ad-unit"]
+##[id*="ad-container"]
+##[class*="ad-slot"]
+##[class*="ad-unit"]
+##[class*="ad-wrapper"]
+##[class*="ad-container"]
+##[class*="ad-placeholder"]
+##[data-ad-slot]
+##[data-ad-unit]
+##[data-adunit]
+##[data-ad-client]
+##[data-google-query-id]
+##iframe[id^="google_ads_"]
+##iframe[name^="google_ads_"]
+##iframe[id^="aswift_"]
+##iframe[src*="doubleclick.net"]
+##iframe[src*="googlesyndication.com"]
+##iframe[src*="googleadservices.com"]
+##iframe[src*="adnxs.com"]
+##iframe[src*="criteo.com"]
+##iframe[src*="taboola.com"]
+##iframe[src*="outbrain.com"]
 ##div[class*="sponsored-post"]
+##div[class*="taboola"]
+##div[class*="outbrain"]
 
 ! Domain-specific cosmetic rules
 youtube.com###masthead-ad

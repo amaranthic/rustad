@@ -1,10 +1,11 @@
 // ==============================================================================
 // RUSTAD PAGE SHIELD (shield.js)
-// Injects cosmetic hiding styles at document_start; updates on toggle
+// Zero-latency injection of pure Rust-compiled cosmetic stylesheet
 // ==============================================================================
 
 (function () {
   const STYLE_ID = "rustad-shield";
+  const CACHE_KEY = "rustad_css_cache";
 
   function applyStyles(css) {
     if (!css) {
@@ -16,9 +17,14 @@
     if (!el) {
       el = document.createElement("style");
       el.id = STYLE_ID;
-      (document.head || document.documentElement).appendChild(el);
+      const parent = document.head || document.documentElement;
+      if (parent) {
+        parent.insertBefore(el, parent.firstChild);
+      }
     }
-    el.textContent = css;
+    if (el.textContent !== css) {
+      el.textContent = css;
+    }
   }
 
   function removeStyles() {
@@ -26,8 +32,20 @@
     if (el) {
       el.remove();
     }
+    try {
+      sessionStorage.removeItem(CACHE_KEY);
+    } catch (_) {}
   }
 
+  // 1. Instant Synchronous Cache Injection (0ms delay at document_start)
+  try {
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    if (cached) {
+      applyStyles(cached);
+    }
+  } catch (_) {}
+
+  // 2. Fetch fresh cosmetic rules from worker via Rust WebAssembly
   function refresh() {
     chrome.runtime.sendMessage(
       { action: "getCosmetics", url: window.location.href },
@@ -36,14 +54,20 @@
           return;
         }
         applyStyles(response.css);
+        try {
+          if (response.css) {
+            sessionStorage.setItem(CACHE_KEY, response.css);
+          } else {
+            sessionStorage.removeItem(CACHE_KEY);
+          }
+        } catch (_) {}
       }
     );
   }
 
-  // Initial shield on page load
   refresh();
 
-  // Listen for real-time toggle changes from the worker
+  // 3. Listen for real-time toggle changes from the popup / worker
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg && msg.action === "stateChanged") {
       if (msg.enabled) {

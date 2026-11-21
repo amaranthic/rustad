@@ -70,6 +70,7 @@ pub fn check_url(url: &str) -> Verdict {
 
 /// Generates cosmetic CSS hiding rules for `url` directly into `out`.
 ///
+/// Hardened to completely collapse layout boxes, padding, margins, and borders.
 /// Returns the number of bytes written.
 pub fn write_cosmetic_css(url: &str, out: &mut [u8]) -> usize {
     let host = extract_host(url);
@@ -114,7 +115,8 @@ pub fn write_cosmetic_css(url: &str, out: &mut [u8]) -> usize {
     });
 
     if count > 0 {
-        let suffix = " { display: none !important; }\n";
+        // Hardened CSS collapse: forces zero dimensions, zero margins/padding, and hides element
+        let suffix = " { display: none !important; visibility: hidden !important; height: 0 !important; min-height: 0 !important; max-height: 0 !important; width: 0 !important; margin: 0 !important; padding: 0 !important; border: none !important; }\n";
         append(suffix, out, &mut written);
     }
 
@@ -161,6 +163,8 @@ mod tests {
     fn test_cosmetic_css_generation() {
         let css = get_cosmetic_css("https://youtube.com");
         assert!(css.contains("display: none !important;"));
+        assert!(css.contains("visibility: hidden !important;"));
+        assert!(css.contains("height: 0 !important;"));
         assert!(css.contains("#masthead-ad"));
         assert!(css.contains(".ad-banner"));
     }
