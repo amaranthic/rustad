@@ -18,3 +18,4 @@
 ||youtube.com/ptracking*
 ||youtube.com/get_midroll_info*
 ||youtube.com/youtubei/v1/log_event*
+||youtube.com/api/stats/watchtime*

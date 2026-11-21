@@ -52,7 +52,7 @@
 ##div[class*="taboola"]
 ##div[class*="outbrain"]
 
-! --- YouTube-Specific Cosmetic Rules ---
+! --- YouTube-Specific Cosmetic Rules (Player, Overlays, Feed, Shorts) ---
 youtube.com###masthead-ad
 youtube.com###player-ads
 youtube.com##.video-ads
@@ -61,6 +61,11 @@ youtube.com##.ytp-ad-overlay-container
 youtube.com##.ytp-ad-player-overlay
 youtube.com##.ytp-ad-image-overlay
 youtube.com##.ytp-ad-text-overlay
+youtube.com##.ytp-ad-progress
+youtube.com##.ytp-ad-progress-list
+youtube.com##.ytp-ad-preview-container
+youtube.com##.ytp-ad-message-container
+youtube.com##.badge-style-type-ad
 youtube.com##ytd-ad-slot-renderer
 youtube.com##ytd-in-feed-ad-layout-renderer
 youtube.com##ytd-banner-promo-renderer
@@ -73,6 +78,12 @@ youtube.com##ytd-promoted-sparkles-text-search-renderer
 youtube.com##ytd-promoted-video-renderer
 youtube.com##ytd-search-pyv-renderer
 youtube.com##ytd-merch-shelf-renderer
+youtube.com##ytd-rich-item-renderer:has(ytd-ad-slot-renderer)
+youtube.com##ytd-rich-item-renderer:has(.ytd-ad-slot-renderer)
+youtube.com##ytd-rich-section-renderer:has(ytd-statement-banner-renderer)
+youtube.com##ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-ads"]
+youtube.com##ytd-reel-video-renderer:has(.ytd-ad-slot-renderer)
+youtube.com##.ytd-shorts-ad-slot
 youtube.com##div#sparkles-container
 
 ! Other domain-specific cosmetic rules
