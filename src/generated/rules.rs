@@ -8,13 +8,16 @@ pub static BLOCKED_DOMAINS: &[&str] = &[
     "adservice.google.com",
     "criteo.com",
     "doubleclick.net",
+    "googleads.g.doubleclick.net",
     "googleadservices.com",
     "googlesyndication.com",
     "outbrain.com",
     "pagead2.googlesyndication.com",
     "popads.net",
     "propellerads.com",
+    "pubads.g.doubleclick.net",
     "scorecardresearch.com",
+    "securepubads.g.doubleclick.net",
     "taboola.com",
 ];
 
@@ -27,6 +30,13 @@ pub static BLOCKED_PATTERNS: &[&str] = &[
     "/banner-ad.js",
     "/pagead/",
     "||example.com/tracking/*",
+    "||youtube.com/api/stats/ads*",
+    "||youtube.com/api/stats/atr*",
+    "||youtube.com/api/stats/qoe*",
+    "||youtube.com/get_midroll_info*",
+    "||youtube.com/pagead/*",
+    "||youtube.com/ptracking*",
+    "||youtube.com/youtubei/v1/log_event*",
 ];
 
 /// Lexicographically sorted slice of whitelisted/allowed domain names.
@@ -101,7 +111,25 @@ pub static DOMAIN_COSMETIC: &[(&str, &str)] = &[
     ("x.com", "div[data-testid=\"placementTracking\"]"),
     ("youtube.com", "#masthead-ad"),
     ("youtube.com", "#player-ads"),
+    ("youtube.com", ".video-ads"),
+    ("youtube.com", ".ytp-ad-image-overlay"),
+    ("youtube.com", ".ytp-ad-module"),
+    ("youtube.com", ".ytp-ad-overlay-container"),
+    ("youtube.com", ".ytp-ad-player-overlay"),
+    ("youtube.com", ".ytp-ad-text-overlay"),
+    ("youtube.com", "div#sparkles-container"),
+    ("youtube.com", "ytd-action-companion-ad-renderer"),
     ("youtube.com", "ytd-ad-slot-renderer"),
+    ("youtube.com", "ytd-banner-promo-renderer"),
+    ("youtube.com", "ytd-companion-slot-renderer"),
+    ("youtube.com", "ytd-display-ad-renderer"),
+    ("youtube.com", "ytd-in-feed-ad-layout-renderer"),
+    ("youtube.com", "ytd-merch-shelf-renderer"),
+    ("youtube.com", "ytd-promoted-sparkles-text-search-renderer"),
+    ("youtube.com", "ytd-promoted-sparkles-web-renderer"),
+    ("youtube.com", "ytd-promoted-video-renderer"),
+    ("youtube.com", "ytd-search-pyv-renderer"),
+    ("youtube.com", "ytd-statement-banner-renderer"),
 ];
 
 /// Domain-specific cosmetic exceptions (#@#) sorted by domain.
